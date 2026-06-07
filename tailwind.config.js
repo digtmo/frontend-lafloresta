@@ -1,0 +1,66 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    './index.html',
+    './src/**/*.{js,ts,jsx,tsx}',
+  ],
+  theme: {
+    extend: {
+      colors: {
+        sage: {
+          50:  '#f4f7f0',
+          100: '#e8f0e0',
+          200: '#d7e4ca',
+          300: '#C5D1B2',
+          400: '#adc196',
+          500: '#8fa877',
+          600: '#718c5c',
+          700: '#5a6f49',
+          800: '#47573a',
+          900: '#38452e',
+        },
+        salvia: {
+          50:  '#f4f7f0',
+          100: '#e8f0e0',
+          200: '#d7e4ca',
+          300: '#C5D1B2',
+          400: '#adc196',
+          500: '#8fa877',
+          600: '#718c5c',
+          700: '#5a6f49',
+          800: '#47573a',
+          900: '#38452e',
+        },
+        terracota: {
+          50:  '#fdf4f0',
+          100: '#fae5db',
+          200: '#f4c9b8',
+          300: '#eca48f',
+          400: '#e07e64',
+          500: '#d45c42',
+          600: '#b84433',
+          700: '#983629',
+          800: '#7c2d22',
+          900: '#64251c',
+        },
+        rosa: {
+          50:  '#fdf4f3',
+          100: '#fae6e3',
+          200: '#f4cdc8',
+          300: '#EAB8B2',
+          400: '#de9f97',
+          500: '#cf8079',
+          600: '#bc5e57',
+          700: '#9c4740',
+          800: '#813a34',
+          900: '#6a302b',
+        },
+      },
+      fontFamily: {
+        serif: ['Georgia', 'Times New Roman', 'serif'],
+        sans:  ['system-ui', '-apple-system', 'sans-serif'],
+      },
+    },
+  },
+  plugins: [],
+}
