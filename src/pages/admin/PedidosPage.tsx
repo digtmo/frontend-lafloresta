@@ -95,8 +95,8 @@ export default function PedidosPage() {
     return () => { if (tBusqueda.current) clearTimeout(tBusqueda.current) }
   }, [busqueda])
 
-  const cargar = useCallback(async () => {
-    setLoading(true)
+  const cargar = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true)
     try {
       const qs = new URLSearchParams()
       qs.set('per_page', '100')
@@ -115,13 +115,30 @@ export default function PedidosPage() {
       setPedidos(dataPedidos.pedidos)
       setRepartidores(dataReps.repartidores ?? [])
     } catch {
-      toast.error('Error al cargar pedidos')
+      if (!silent) toast.error('Error al cargar pedidos')
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [desde, hasta, busquedaDeb])
 
   useEffect(() => { cargar() }, [cargar])
+
+  // Auto-refresco discreto: el estado de WhatsApp (enviando → entregado → leído)
+  // se actualiza por webhook después de enviar, así que reconsultamos la lista
+  // periódicamente y al volver el foco a la pestaña sin mostrar el spinner.
+  useEffect(() => {
+    const iv = setInterval(() => {
+      if (document.visibilityState === 'visible') cargar(true)
+    }, 20_000)
+    const onFocus = () => { if (document.visibilityState === 'visible') cargar(true) }
+    document.addEventListener('visibilitychange', onFocus)
+    window.addEventListener('focus', onFocus)
+    return () => {
+      clearInterval(iv)
+      document.removeEventListener('visibilitychange', onFocus)
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [cargar])
 
   function aplicarPreset(key: PresetKey) {
     setPreset(key)
@@ -194,7 +211,7 @@ export default function PedidosPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={cargar} className="btn-outline" title="Actualizar">
+          <button onClick={() => cargar()} className="btn-outline" title="Actualizar">
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
           <button onClick={() => setModalAbierto(true)} className="btn-primary">
