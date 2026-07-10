@@ -1,6 +1,12 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { apiFetch } from '@/lib/api'
-import { MessageSquare, Send, ImageIcon, Loader2, CheckCircle2, XCircle } from 'lucide-react'
+import { MessageSquare, Send, ImageIcon, Loader2, CheckCircle2, XCircle, BarChart3 } from 'lucide-react'
+
+interface WhatsappStats {
+  costoUnitarioUsd: number
+  mes:       { total: number; entregados: number; errores: number; costoUsd: number }
+  historico: { total: number; entregados: number; errores: number; costoUsd: number }
+}
 
 export default function WhatsappTestPage() {
   const [nombre,   setNombre]   = useState('')
@@ -11,7 +17,17 @@ export default function WhatsappTestPage() {
   const [loading,  setLoading]  = useState(false)
   const [result,   setResult]   = useState<{ ok: boolean; msg: string } | null>(null)
 
+  const [stats, setStats] = useState<WhatsappStats | null>(null)
+
   const fileRef = useRef<HTMLInputElement>(null)
+
+  const cargarStats = useCallback(() => {
+    apiFetch<WhatsappStats>('/api/whatsapp-stats')
+      .then(setStats)
+      .catch(() => setStats(null))
+  }, [])
+
+  useEffect(() => { cargarStats() }, [cargarStats])
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -38,6 +54,7 @@ export default function WhatsappTestPage() {
       )
       if (data.ok) {
         setResult({ ok: true, msg: `Mensaje enviado correctamente. ID: ${data.messageId ?? '—'}` })
+        cargarStats()
       } else {
         setResult({ ok: false, msg: (data.error ?? 'Error desconocido') })
       }
@@ -50,7 +67,35 @@ export default function WhatsappTestPage() {
 
   return (
     <div className="min-h-full flex items-start justify-center px-4 py-12">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md space-y-4">
+        {stats && (
+          <div className="bg-white rounded-2xl shadow-sm border border-stone-200 px-6 py-5">
+            <div className="flex items-center gap-2 mb-3">
+              <BarChart3 className="w-4 h-4 text-green-600" />
+              <h2 className="text-sm font-semibold text-stone-800">Envíos y costo aproximado</h2>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-center">
+              <div className="rounded-lg bg-stone-50 border border-stone-100 py-3">
+                <p className="text-[11px] text-stone-400 uppercase tracking-wide">Este mes</p>
+                <p className="text-xl font-semibold text-stone-800">{stats.mes.total}</p>
+                <p className="text-xs text-stone-500 mt-0.5">≈ US$ {stats.mes.costoUsd.toFixed(2)}</p>
+              </div>
+              <div className="rounded-lg bg-stone-50 border border-stone-100 py-3">
+                <p className="text-[11px] text-stone-400 uppercase tracking-wide">Histórico</p>
+                <p className="text-xl font-semibold text-stone-800">{stats.historico.total}</p>
+                <p className="text-xs text-stone-500 mt-0.5">≈ US$ {stats.historico.costoUsd.toFixed(2)}</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between mt-3 text-[11px] text-stone-400">
+              <span>Entregados: {stats.mes.entregados} · Errores: {stats.mes.errores} (mes)</span>
+              <span>US$ {stats.costoUnitarioUsd.toFixed(3)} c/u</span>
+            </div>
+            <p className="text-[10px] text-stone-400 mt-2 leading-snug">
+              Costo estimado según tarifa utility de Meta para Chile. Los mensajes con error no se cobran.
+            </p>
+          </div>
+        )}
+
         <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
           <div className="px-6 py-5 border-b border-stone-100 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-green-50">
