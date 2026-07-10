@@ -79,11 +79,13 @@ export default function PedidoExpandido({ pedido, repartidores, onActualizar }: 
     try {
       const imagenBase64 = await fileToBase64(file)
       const nombre = remitente || 'Cliente'
-      await apiFetch('/api/whatsapp-test', {
+      const resp = await apiFetch<{ ok: boolean; pedidoCompletado?: boolean }>('/api/whatsapp-test', {
         method: 'POST',
         body: JSON.stringify({ nombre, telefono, imagenBase64, mimeType: file.type, pedidoId: pedido.id }),
       })
-      toast.success('WhatsApp enviado')
+      toast.success(resp.pedidoCompletado
+        ? `WhatsApp enviado — pedido #${pedido.number} completado`
+        : 'WhatsApp enviado')
       onActualizar()
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Error al enviar WhatsApp')
