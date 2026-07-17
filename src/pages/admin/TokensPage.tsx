@@ -54,7 +54,7 @@ export default function TokensPage() {
     try {
       const data = await apiFetch<{ token: string; url: string; expiraEn: number }>('/api/tokens', { method: 'POST' })
       setTokens((prev) => [{ token: data.token, url: data.url, expiraEn: data.expiraEn }, ...prev])
-      toast.success('Link generado — válido por 10 minutos')
+      toast.success('Link generado — válido por 30 minutos')
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Error al generar el link')
     } finally {
@@ -66,7 +66,7 @@ export default function TokensPage() {
     <div className="p-6 max-w-2xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-serif text-stone-800">Links de pedido</h1>
-        <p className="text-sm text-stone-500 mt-1">Genera un link único con tiempo limitado (10 min) para que un cliente llene su pedido directamente.</p>
+        <p className="text-sm text-stone-500 mt-1">Genera un link único con tiempo limitado (30 min) para que un cliente llene su pedido directamente.</p>
       </div>
 
       <button onClick={generar} disabled={generando} className="btn-primary mb-8">
@@ -102,7 +102,7 @@ export default function TokensPage() {
           ))}
         </div>
       )}
-      <p className="text-xs text-stone-400 mt-6">Los links son de un solo uso y expiran en 10 minutos.</p>
+      <p className="text-xs text-stone-400 mt-6">Los links son de un solo uso y expiran en 30 minutos.</p>
     </div>
   )
 }
