@@ -1,7 +1,8 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, ShoppingBag, Truck, LogOut, Link2, MessageSquare, X, PanelLeftClose } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, Truck, LogOut, Link2, MessageSquare, X, PanelLeftClose, Download } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/context/AuthContext'
+import { usePWAInstall } from '@/lib/pwa'
 
 interface Props {
   onClose?:    () => void
@@ -20,6 +21,7 @@ export default function Sidebar({ onClose, onCollapse }: Props) {
   const location = useLocation()
   const navigate = useNavigate()
   const { logout } = useAuth()
+  const { canInstall, promptInstall } = usePWAInstall()
 
   function handleLogout() {
     logout()
@@ -68,7 +70,16 @@ export default function Sidebar({ onClose, onCollapse }: Props) {
         })}
       </nav>
 
-      <div className="px-3 py-4 border-t border-stone-800 shrink-0">
+      <div className="px-3 py-4 border-t border-stone-800 shrink-0 space-y-0.5">
+        {canInstall && (
+          <button
+            onClick={promptInstall}
+            className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm font-medium text-sage-300 hover:bg-sage-300/10 transition-colors"
+          >
+            <Download className="w-4 h-4 shrink-0" />
+            Instalar app
+          </button>
+        )}
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm font-medium text-stone-400 hover:bg-red-950 hover:text-red-400 transition-colors"

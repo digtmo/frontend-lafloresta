@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
+import { PWAUpdater } from './lib/pwa'
 
 import LoginPage from './pages/auth/LoginPage'
 
@@ -40,6 +41,7 @@ function RequireAuth({ children, rol }: { children: React.ReactNode; rol?: 'admi
 export default function App() {
   return (
     <BrowserRouter>
+      <PWAUpdater />
       <Routes>
         <Route path="/" element={<RootRedirect />} />
         <Route path="/auth/login" element={<LoginPage />} />

@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt', // avisamos con un toast en lugar de recargar solo
       includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
       manifest: {
         name: 'La Floresta — Admin',

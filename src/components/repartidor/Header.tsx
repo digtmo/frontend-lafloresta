@@ -1,11 +1,13 @@
 import { useNavigate } from 'react-router-dom'
-import { LogOut } from 'lucide-react'
+import { LogOut, Download } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/context/AuthContext'
+import { usePWAInstall } from '@/lib/pwa'
 
 export default function Header({ nombre }: { nombre: string }) {
   const navigate = useNavigate()
   const { logout } = useAuth()
+  const { canInstall, promptInstall } = usePWAInstall()
 
   function handleLogout() {
     logout()
@@ -25,10 +27,18 @@ export default function Header({ nombre }: { nombre: string }) {
           <div className="h-5 w-px bg-stone-700" />
           <p className="text-sm font-medium text-stone-200">{nombre}</p>
         </div>
-        <button onClick={handleLogout} className="flex items-center gap-1.5 text-sm text-stone-400 hover:text-red-400 transition-colors">
-          <LogOut className="w-4 h-4" />
-          <span className="hidden sm:inline">Salir</span>
-        </button>
+        <div className="flex items-center gap-3">
+          {canInstall && (
+            <button onClick={promptInstall} className="flex items-center gap-1.5 text-sm text-sage-300 hover:text-sage-200 transition-colors">
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Instalar</span>
+            </button>
+          )}
+          <button onClick={handleLogout} className="flex items-center gap-1.5 text-sm text-stone-400 hover:text-red-400 transition-colors">
+            <LogOut className="w-4 h-4" />
+            <span className="hidden sm:inline">Salir</span>
+          </button>
+        </div>
       </div>
     </header>
   )
