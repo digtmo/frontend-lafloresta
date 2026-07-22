@@ -235,21 +235,21 @@ export default function PedidoExpandido({ pedido, repartidores, onActualizar }: 
                 {guardando ? 'Guardando…' : 'Asignar'}
               </button>
               {pedido.status === 'processing' && (
-                <div className="flex gap-1.5">
+                <div className="flex flex-wrap gap-1.5">
                   {pedido.billing.phone && (
                     <>
                       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleEnviarWhatsApp} />
                       <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={enviandoWa}
-                        className="flex-1 justify-center text-xs py-2 rounded-lg font-medium flex items-center gap-1.5 bg-[#25D366] text-white hover:bg-[#1ebe5d] disabled:opacity-60"
+                        className="flex-1 min-w-[6.5rem] whitespace-nowrap justify-center text-xs py-2 rounded-lg font-medium flex items-center gap-1.5 bg-[#25D366] text-white hover:bg-[#1ebe5d] disabled:opacity-60"
                       >
                         {enviandoWa ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="" className="w-3.5 h-3.5" />}
                         {enviandoWa ? 'Enviando…' : 'WhatsApp'}
                       </button>
                     </>
                   )}
-                  <button onClick={handleCompletar} disabled={completando} className="flex-1 justify-center text-xs py-2 rounded-lg font-medium flex items-center gap-1.5 bg-green-600 text-white hover:bg-green-700 disabled:opacity-60">
+                  <button onClick={handleCompletar} disabled={completando} className="flex-1 min-w-[6.5rem] whitespace-nowrap justify-center text-xs py-2 rounded-lg font-medium flex items-center gap-1.5 bg-green-600 text-white hover:bg-green-700 disabled:opacity-60">
                     {completando ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
                     {completando ? '…' : 'Completado'}
                   </button>

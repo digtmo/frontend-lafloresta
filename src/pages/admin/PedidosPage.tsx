@@ -5,8 +5,9 @@ import PedidoExpandido from '@/components/admin/PedidoExpandido'
 import ModalNuevoPedido from '@/components/admin/ModalNuevoPedido'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
+import CalendarioPedidos from '@/components/admin/CalendarioPedidos'
 import { apiFetch } from '@/lib/api'
-import { Plus, Search, RefreshCw, ChevronDown, ChevronRight, CalendarDays, X, Calendar } from 'lucide-react'
+import { Plus, Search, RefreshCw, ChevronDown, ChevronRight, CalendarDays, X, Calendar, List } from 'lucide-react'
 
 function hoyLocal(): string {
   const d = new Date()
@@ -84,6 +85,7 @@ export default function PedidosPage() {
   const [busquedaDeb,  setBusquedaDeb]  = useState('')
   const [colapsadas,   setColapsadas]   = useState<Set<string>>(new Set())
   const [modalAbierto, setModalAbierto] = useState(false)
+  const [vista,        setVista]        = useState<'lista' | 'calendario'>('lista')
   const [preset,       setPreset]       = useState<PresetKey>('7d')
   const [desde,        setDesde]        = useState(rangoPreset('7d').desde)
   const [hasta,        setHasta]        = useState(rangoPreset('7d').hasta)
@@ -127,6 +129,7 @@ export default function PedidosPage() {
   // se actualiza por webhook después de enviar, así que reconsultamos la lista
   // periódicamente y al volver el foco a la pestaña sin mostrar el spinner.
   useEffect(() => {
+    if (vista !== 'lista') return
     const iv = setInterval(() => {
       if (document.visibilityState === 'visible') cargar(true)
     }, 20_000)
@@ -138,7 +141,7 @@ export default function PedidosPage() {
       document.removeEventListener('visibilitychange', onFocus)
       window.removeEventListener('focus', onFocus)
     }
-  }, [cargar])
+  }, [cargar, vista])
 
   function aplicarPreset(key: PresetKey) {
     setPreset(key)
@@ -207,13 +210,39 @@ export default function PedidosPage() {
         <div>
           <h1 className="text-2xl font-serif text-stone-800">Pedidos</h1>
           <p className="text-sm text-stone-500 mt-0.5">
-            {loading ? 'Cargando…' : `${total} pedido${total !== 1 ? 's' : ''}${buscando ? ` · resultados de "${busquedaDeb}"` : ''}`}
+            {vista === 'calendario'
+              ? 'Pedidos del mes por fecha de entrega'
+              : loading ? 'Cargando…' : `${total} pedido${total !== 1 ? 's' : ''}${buscando ? ` · resultados de "${busquedaDeb}"` : ''}`}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => cargar()} className="btn-outline" title="Actualizar">
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
+          <div className="flex rounded-lg bg-stone-100 p-0.5">
+            <button
+              onClick={() => setVista('lista')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                vista === 'lista' ? 'bg-white text-stone-800 shadow-sm' : 'text-stone-500 hover:text-stone-700'
+              }`}
+              title="Vista de lista"
+            >
+              <List className="w-4 h-4" />
+              <span className="hidden sm:inline">Lista</span>
+            </button>
+            <button
+              onClick={() => setVista('calendario')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                vista === 'calendario' ? 'bg-white text-stone-800 shadow-sm' : 'text-stone-500 hover:text-stone-700'
+              }`}
+              title="Vista de calendario"
+            >
+              <CalendarDays className="w-4 h-4" />
+              <span className="hidden sm:inline">Calendario</span>
+            </button>
+          </div>
+          {vista === 'lista' && (
+            <button onClick={() => cargar()} className="btn-outline" title="Actualizar">
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+          )}
           <button onClick={() => setModalAbierto(true)} className="btn-primary">
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Nuevo pedido</span>
@@ -222,6 +251,7 @@ export default function PedidosPage() {
         </div>
       </div>
 
+      {vista === 'lista' && (
       <div className="card p-3 mb-6 space-y-3">
         <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
           <div className="relative flex-1">
@@ -299,8 +329,11 @@ export default function PedidosPage() {
           </div>
         )}
       </div>
+      )}
 
-      {loading ? (
+      {vista === 'calendario' ? (
+        <CalendarioPedidos repartidores={repartidores} />
+      ) : loading ? (
         <LoadingSpinner text="Cargando pedidos…" />
       ) : grupos.length === 0 ? (
         <EmptyState
