@@ -86,6 +86,14 @@ export default function PedidosPage() {
   const [colapsadas,   setColapsadas]   = useState<Set<string>>(new Set())
   const [modalAbierto, setModalAbierto] = useState(false)
   const [vista,        setVista]        = useState<'lista' | 'calendario'>('lista')
+  const [avisoCalendario, setAvisoCalendario] = useState(() => {
+    try { return localStorage.getItem('aviso-calendario-v1') !== 'visto' } catch { return false }
+  })
+
+  function cerrarAviso() {
+    setAvisoCalendario(false)
+    try { localStorage.setItem('aviso-calendario-v1', 'visto') } catch { /* ignorar */ }
+  }
   const [preset,       setPreset]       = useState<PresetKey>('7d')
   const [desde,        setDesde]        = useState(rangoPreset('7d').desde)
   const [hasta,        setHasta]        = useState(rangoPreset('7d').hasta)
@@ -386,6 +394,36 @@ export default function PedidosPage() {
 
       {modalAbierto && (
         <ModalNuevoPedido onClose={() => setModalAbierto(false)} onCreado={cargar} />
+      )}
+
+      {avisoCalendario && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={cerrarAviso}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 text-center relative" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={cerrarAviso}
+              className="absolute top-3 right-3 p-2 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="w-14 h-14 rounded-full bg-sage-100 text-sage-600 flex items-center justify-center mx-auto mb-4">
+              <CalendarDays className="w-7 h-7" />
+            </div>
+            <h2 className="text-xl font-serif text-stone-800 mb-2">¡Nueva vista de calendario!</h2>
+            <p className="text-sm text-stone-500 mb-6">
+              Ahora puedes ver los pedidos del mes organizados por fecha de entrega.
+              Pincha en un día para ver el detalle de sus pedidos.
+            </p>
+            <div className="flex gap-2">
+              <button onClick={cerrarAviso} className="btn-outline flex-1 justify-center">Más tarde</button>
+              <button
+                onClick={() => { setVista('calendario'); cerrarAviso() }}
+                className="btn-primary flex-1 justify-center"
+              >
+                Ir a ver
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
