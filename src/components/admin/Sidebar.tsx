@@ -1,8 +1,8 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, ShoppingBag, Truck, LogOut, Link2, MessageSquare, X, PanelLeftClose, Download } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, Truck, LogOut, Link2, MessageSquare, X, PanelLeftClose, Download, Bell, BellOff } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/context/AuthContext'
-import { usePWAInstall } from '@/lib/pwa'
+import { usePWAInstall, usePushNotifications } from '@/lib/pwa'
 
 interface Props {
   onClose?:    () => void
@@ -22,6 +22,7 @@ export default function Sidebar({ onClose, onCollapse }: Props) {
   const navigate = useNavigate()
   const { logout } = useAuth()
   const { canInstall, promptInstall } = usePWAInstall()
+  const push = usePushNotifications()
 
   function handleLogout() {
     logout()
@@ -71,6 +72,20 @@ export default function Sidebar({ onClose, onCollapse }: Props) {
       </nav>
 
       <div className="px-3 py-4 border-t border-stone-800 shrink-0 space-y-0.5">
+        {push.supported && (
+          <button
+            onClick={push.subscribed ? push.desactivar : push.activar}
+            disabled={push.busy}
+            className={`flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm font-medium transition-colors disabled:opacity-60 ${
+              push.subscribed
+                ? 'text-sage-300 hover:bg-sage-300/10'
+                : 'text-stone-400 hover:bg-stone-800 hover:text-stone-100'
+            }`}
+          >
+            {push.subscribed ? <Bell className="w-4 h-4 shrink-0" /> : <BellOff className="w-4 h-4 shrink-0" />}
+            {push.subscribed ? 'Notificaciones activadas' : 'Activar notificaciones'}
+          </button>
+        )}
         {canInstall && (
           <button
             onClick={promptInstall}

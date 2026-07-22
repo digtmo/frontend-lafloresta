@@ -32,6 +32,8 @@ export default defineConfig({
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api/],
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        importScripts: ['push-sw.js'], // handlers de notificaciones push
+
       },
       devOptions: {
         enabled: false, // el SW solo se activa en build de producción

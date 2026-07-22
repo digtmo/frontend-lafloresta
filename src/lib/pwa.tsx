@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useRegisterSW } from 'virtual:pwa-register/react'
+import { apiFetch } from '@/lib/api'
 
 // El evento no está tipado en el DOM estándar.
 interface BeforeInstallPromptEvent extends Event {
@@ -70,6 +71,96 @@ export function usePWAInstall() {
   }, [ios])
 
   return { canInstall: canPrompt || ios, promptInstall: install }
+}
+
+function urlBase64ToUint8Array(base64: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64.length % 4)) % 4)
+  const b64 = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const raw = atob(b64)
+  const arr = new Uint8Array(raw.length)
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i)
+  return arr
+}
+
+/**
+ * Maneja las notificaciones push: pedir permiso, suscribirse (guardando la
+ * suscripción en el backend) y desactivarlas. Solo funciona sobre el build de
+ * producción (con service worker activo) y, en iOS, con la PWA ya instalada.
+ */
+export function usePushNotifications() {
+  const supported =
+    typeof window !== 'undefined' &&
+    'Notification' in window &&
+    'serviceWorker' in navigator &&
+    'PushManager' in window
+
+  const [permission, setPermission] = useState<NotificationPermission>(
+    supported ? Notification.permission : 'denied',
+  )
+  const [subscribed, setSubscribed] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    if (!supported) return
+    navigator.serviceWorker.ready
+      .then((reg) => reg.pushManager.getSubscription())
+      .then((sub) => setSubscribed(!!sub))
+      .catch(() => { /* SW aún no activo (dev) */ })
+  }, [supported])
+
+  const activar = useCallback(async () => {
+    if (!supported || busy) return
+    setBusy(true)
+    try {
+      const perm = await Notification.requestPermission()
+      setPermission(perm)
+      if (perm !== 'granted') {
+        toast.error('Permiso de notificaciones denegado')
+        return
+      }
+      const { key } = await apiFetch<{ key: string }>('/api/push/public-key')
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(key) as BufferSource,
+      })
+      await apiFetch('/api/push/subscribe', {
+        method: 'POST',
+        body: JSON.stringify({ subscription: sub.toJSON() }),
+      })
+      setSubscribed(true)
+      toast.success('Notificaciones activadas')
+    } catch (err) {
+      console.error('[push] activar', err)
+      toast.error('No se pudieron activar las notificaciones')
+    } finally {
+      setBusy(false)
+    }
+  }, [supported, busy])
+
+  const desactivar = useCallback(async () => {
+    if (!supported || busy) return
+    setBusy(true)
+    try {
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.getSubscription()
+      if (sub) {
+        await apiFetch('/api/push/unsubscribe', {
+          method: 'POST',
+          body: JSON.stringify({ endpoint: sub.endpoint }),
+        }).catch(() => { /* seguimos aunque falle el backend */ })
+        await sub.unsubscribe()
+      }
+      setSubscribed(false)
+      toast.success('Notificaciones desactivadas')
+    } catch (err) {
+      console.error('[push] desactivar', err)
+    } finally {
+      setBusy(false)
+    }
+  }, [supported, busy])
+
+  return { supported, permission, subscribed, busy, activar, desactivar }
 }
 
 /**
