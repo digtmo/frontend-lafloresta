@@ -61,6 +61,18 @@ export default function CalendarioPedidos({ repartidores }: Props) {
   const [loading, setLoading] = useState(true)
   const [diaSel, setDiaSel] = useState<string | null>(null)
 
+  // En mobile, dentro del modal mostramos solo el resumen del pedido y el
+  // detalle se expande al tocarlo; en desktop se muestra completo.
+  const [esMobile, setEsMobile] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches,
+  )
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 640px)')
+    const on = () => setEsMobile(mq.matches)
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [])
+
   // Carga todos los pedidos cuya fecha de entrega cae en el mes visible.
   const cargar = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -304,7 +316,14 @@ export default function CalendarioPedidos({ repartidores }: Props) {
                     .slice()
                     .sort((a, b) => (a.status === b.status ? 0 : a.status === 'processing' ? -1 : 1))
                     .map((p) => (
-                      <PedidoExpandido key={p.id} pedido={p} repartidores={repartidores} onActualizar={cargar} />
+                      <PedidoExpandido
+                        key={p.id}
+                        pedido={p}
+                        repartidores={repartidores}
+                        onActualizar={cargar}
+                        colapsable={esMobile}
+                        defaultAbierto={false}
+                      />
                     ))}
                 </div>
               )}

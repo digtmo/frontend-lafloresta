@@ -7,13 +7,17 @@ import EstadoBadge from './EstadoBadge'
 import {
   Phone, Mail, MapPin, MessageSquare, Package,
   Truck, Loader2, Clock, FileText, CheckCircle2, CreditCard,
-  Send, CheckCheck, Eye, XCircle, ImageIcon,
+  Send, CheckCheck, Eye, XCircle, ImageIcon, ChevronDown,
 } from 'lucide-react'
 
 interface Props {
   pedido: Pedido
   repartidores: { email: string; nombre: string }[]
   onActualizar: () => void
+  /** Si es true, el header actúa como resumen y el detalle se expande al tocarlo. */
+  colapsable?: boolean
+  /** Estado inicial cuando es colapsable. */
+  defaultAbierto?: boolean
 }
 
 function formatHora(iso: string): string {
@@ -24,7 +28,8 @@ function formatHora(iso: string): string {
   } catch { return iso }
 }
 
-export default function PedidoExpandido({ pedido, repartidores, onActualizar }: Props) {
+export default function PedidoExpandido({ pedido, repartidores, onActualizar, colapsable = false, defaultAbierto = true }: Props) {
+  const [abierto, setAbierto] = useState(colapsable ? defaultAbierto : true)
   const [repEmail,     setRepEmail]     = useState(pedido.repartidorEmail ?? '')
   const [guardando,    setGuardando]    = useState(false)
   const [completando,  setCompletando]  = useState(false)
@@ -108,13 +113,20 @@ export default function PedidoExpandido({ pedido, repartidores, onActualizar }: 
   return (
     <>
       <div className="card overflow-hidden hover:shadow-md transition-shadow">
-        <div className="flex items-center gap-2 sm:gap-3 px-4 py-3 bg-stone-50/60 border-b border-stone-100 flex-wrap">
+        <div
+          onClick={colapsable ? () => setAbierto((v) => !v) : undefined}
+          className={`flex items-center gap-2 sm:gap-3 px-4 py-3 bg-stone-50/60 border-b border-stone-100 flex-wrap ${colapsable ? 'cursor-pointer select-none active:bg-stone-100' : ''}`}
+        >
           <span className="font-mono font-bold text-black text-sm shrink-0">#{pedido.number}</span>
           <EstadoBadge estado={pedido.status} />
           {pedido.meta.horario && (
             <span className="inline-flex items-center gap-1 text-xs text-stone-500 bg-white border border-stone-200 px-2 py-0.5 rounded-full">
               <Clock className="w-3 h-3" />{pedido.meta.horario}
             </span>
+          )}
+          {/* En resumen colapsado mostramos el destinatario para identificar el pedido de un vistazo */}
+          {colapsable && !abierto && receptor && (
+            <span className="text-xs text-stone-600 font-medium truncate max-w-[45%]">{receptor}</span>
           )}
           {pedido.repartidorNombre && (
             <span className="inline-flex items-center gap-1 text-xs text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full">
@@ -128,8 +140,12 @@ export default function PedidoExpandido({ pedido, repartidores, onActualizar }: 
           )}
           <div className="flex-1" />
           <span className="text-sm font-semibold text-stone-700 shrink-0">{formatCLP(pedido.total)}</span>
+          {colapsable && (
+            <ChevronDown className={`w-4 h-4 text-stone-400 shrink-0 transition-transform ${abierto ? 'rotate-180' : ''}`} />
+          )}
         </div>
 
+        {(!colapsable || abierto) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-stone-100">
           {/* Quien envía */}
           <div className="p-4 space-y-1.5 min-w-0">
@@ -258,6 +274,7 @@ export default function PedidoExpandido({ pedido, repartidores, onActualizar }: 
             </div>
           </div>
         </div>
+        )}
       </div>
 
       {fotoAmpliada && fotoEntregaUrl && (
