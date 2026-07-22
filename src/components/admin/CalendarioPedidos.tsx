@@ -86,12 +86,18 @@ export default function CalendarioPedidos({ repartidores }: Props) {
     return () => clearInterval(iv)
   }, [cargar])
 
-  // Cerrar el modal con la tecla Escape
+  // Cerrar el modal con Escape y bloquear el scroll del fondo mientras está abierto
+  // (en mobile, sin esto el gesto de scroll mueve la página detrás en vez del modal).
   useEffect(() => {
     if (!diaSel) return
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setDiaSel(null) }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prevOverflow
+    }
   }, [diaSel])
 
   // Mapa fecha ISO → pedidos de ese día
@@ -289,7 +295,7 @@ export default function CalendarioPedidos({ repartidores }: Props) {
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 px-4 sm:px-6 py-5 bg-stone-50/60 rounded-b-2xl">
+            <div className="overflow-y-auto overscroll-contain flex-1 min-h-0 px-4 sm:px-6 py-5 bg-stone-50/60 rounded-b-2xl">
               {pedidosDelDia.length === 0 ? (
                 <p className="text-sm text-stone-400 py-8 text-center">No hay pedidos para este día.</p>
               ) : (

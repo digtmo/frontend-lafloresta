@@ -12,24 +12,36 @@ interface BeforeInstallPromptEvent extends Event {
 // vez (a veces antes de que monte el componente que lo necesita).
 let deferredPrompt: BeforeInstallPromptEvent | null = null
 
+const esIOS = (): boolean =>
+  /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+  // iPad con iPadOS se identifica como Mac pero es táctil
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+
+const yaInstalada = (): boolean =>
+  window.matchMedia('(display-mode: standalone)').matches ||
+  (navigator as unknown as { standalone?: boolean }).standalone === true
+
 /**
- * Expone si la app se puede instalar (Android/desktop con soporte de
- * `beforeinstallprompt`) y una función para lanzar el diálogo nativo.
- * En iOS este evento no existe: la instalación es manual (Compartir → Agregar
- * a inicio), por eso `canInstall` será false ahí.
+ * Expone si la app se puede instalar y una acción para instalarla:
+ * - Android/desktop (Chrome, Edge…): dispara el diálogo nativo vía
+ *   `beforeinstallprompt`.
+ * - iOS (Safari): ese evento no existe, así que mostramos las instrucciones
+ *   manuales (Compartir → Agregar a inicio).
+ * `instalable` es false si la app ya está instalada (modo standalone).
  */
 export function usePWAInstall() {
-  const [canInstall, setCanInstall] = useState(!!deferredPrompt)
+  const [canPrompt, setCanPrompt] = useState(!!deferredPrompt)
+  const [ios] = useState(() => esIOS() && !yaInstalada())
 
   useEffect(() => {
     const onPrompt = (e: Event) => {
       e.preventDefault()
       deferredPrompt = e as BeforeInstallPromptEvent
-      setCanInstall(true)
+      setCanPrompt(true)
     }
     const onInstalled = () => {
       deferredPrompt = null
-      setCanInstall(false)
+      setCanPrompt(false)
     }
     window.addEventListener('beforeinstallprompt', onPrompt)
     window.addEventListener('appinstalled', onInstalled)
@@ -39,17 +51,25 @@ export function usePWAInstall() {
     }
   }, [])
 
-  const promptInstall = useCallback(async () => {
-    if (!deferredPrompt) return
-    await deferredPrompt.prompt()
-    const { outcome } = await deferredPrompt.userChoice
-    if (outcome === 'accepted') {
-      deferredPrompt = null
-      setCanInstall(false)
+  const install = useCallback(async () => {
+    if (deferredPrompt) {
+      await deferredPrompt.prompt()
+      const { outcome } = await deferredPrompt.userChoice
+      if (outcome === 'accepted') {
+        deferredPrompt = null
+        setCanPrompt(false)
+      }
+      return
     }
-  }, [])
+    if (ios) {
+      toast(
+        'Para instalar: toca el botón Compartir y luego “Agregar a inicio”.',
+        { icon: '📲', duration: 6000 },
+      )
+    }
+  }, [ios])
 
-  return { canInstall, promptInstall }
+  return { canInstall: canPrompt || ios, promptInstall: install }
 }
 
 /**
