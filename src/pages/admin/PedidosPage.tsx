@@ -20,6 +20,23 @@ function addDias(base: string, n: number): string {
   return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`
 }
 
+const MESES_ES: Record<string, number> = {
+  enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5, junio: 6,
+  julio: 7, agosto: 8, septiembre: 9, setiembre: 9, octubre: 10,
+  noviembre: 11, diciembre: 12,
+}
+
+// Parsea formatos en español como "3 Agosto, 2026" o "3 de agosto de 2026"
+function parsearFechaTextual(s: string): string | null {
+  const m = s
+    .toLowerCase()
+    .match(/^(\d{1,2})\s+(?:de\s+)?([a-záéíóúñ]+)\.?\s*(?:,|de|del)?\s*(\d{4})/)
+  if (!m) return null
+  const mes = MESES_ES[m[2]]
+  if (!mes) return null
+  return `${m[3]}-${String(mes).padStart(2, '0')}-${m[1].padStart(2, '0')}`
+}
+
 function normalizarFecha(str: string): string | null {
   if (!str || !str.trim()) return null
   const s = str.trim()
@@ -28,6 +45,8 @@ function normalizarFecha(str: string): string | null {
   if (dmy) return `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`
   const dmyD = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})/)
   if (dmyD) return `${dmyD[3]}-${dmyD[2].padStart(2, '0')}-${dmyD[1].padStart(2, '0')}`
+  const textual = parsearFechaTextual(s)
+  if (textual) return textual
   try {
     const d = new Date(s)
     if (!isNaN(d.getTime())) {
