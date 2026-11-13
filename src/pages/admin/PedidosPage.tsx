@@ -7,7 +7,8 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
 import CalendarioPedidos from '@/components/admin/CalendarioPedidos'
 import { apiFetch } from '@/lib/api'
-import { Plus, Search, RefreshCw, ChevronDown, ChevronRight, CalendarDays, X, Calendar, List } from 'lucide-react'
+import { exportarPedidosExcel } from '@/lib/exportarPedidos'
+import { Plus, Search, RefreshCw, ChevronDown, ChevronRight, CalendarDays, X, Calendar, List, Download } from 'lucide-react'
 
 function hoyLocal(): string {
   const d = new Date()
@@ -105,6 +106,7 @@ export default function PedidosPage() {
   const [colapsadas,   setColapsadas]   = useState<Set<string>>(new Set())
   const [modalAbierto, setModalAbierto] = useState(false)
   const [vista,        setVista]        = useState<'lista' | 'calendario'>('lista')
+  const [exportando,   setExportando]   = useState(false)
   const [avisoCalendario, setAvisoCalendario] = useState(() => {
     try { return localStorage.getItem('aviso-calendario-v1') !== 'visto' } catch { return false }
   })
@@ -183,6 +185,43 @@ export default function PedidosPage() {
     if (desde > hasta) { toast.error('La fecha de inicio debe ser anterior a la final'); return }
     setPreset('custom')
     cargar()
+  }
+
+  // Exporta lo que el usuario está viendo (rango o búsqueda + filtro de estado),
+  // pero paginando: la lista en pantalla solo trae los primeros 100 pedidos.
+  async function exportar() {
+    setExportando(true)
+    try {
+      const todos: Pedido[] = []
+      for (let page = 1; page <= 20; page++) {
+        const qs = new URLSearchParams()
+        qs.set('per_page', '100')
+        qs.set('page', String(page))
+        if (busquedaDeb) {
+          qs.set('search', busquedaDeb)
+        } else {
+          qs.set('desde', desde)
+          qs.set('hasta', hasta)
+        }
+        const { pedidos: lote } = await apiFetch<{ pedidos: Pedido[] }>(`/api/pedidos?${qs}`)
+        todos.push(...lote)
+        if (lote.length < 100) break
+      }
+
+      const lista = todos.filter((p) => estado === 'todos' || p.status === estado)
+      if (lista.length === 0) {
+        toast.error('No hay pedidos para exportar')
+        return
+      }
+
+      const sufijo = busquedaDeb ? 'busqueda' : `${desde}_a_${hasta}`
+      await exportarPedidosExcel(lista, normalizarFecha, `pedidos_${sufijo}.xlsx`)
+      toast.success(`${lista.length} pedido${lista.length !== 1 ? 's' : ''} exportado${lista.length !== 1 ? 's' : ''}`)
+    } catch {
+      toast.error('Error al exportar pedidos')
+    } finally {
+      setExportando(false)
+    }
   }
 
   const pedidosFiltrados = useMemo(() =>
@@ -268,6 +307,17 @@ export default function PedidosPage() {
           {vista === 'lista' && (
             <button onClick={() => cargar()} className="btn-outline" title="Actualizar">
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+          )}
+          {vista === 'lista' && (
+            <button
+              onClick={exportar}
+              disabled={exportando || loading}
+              className="btn-outline disabled:opacity-50"
+              title="Exportar a Excel"
+            >
+              <Download className={`w-4 h-4 ${exportando ? 'animate-pulse' : ''}`} />
+              <span className="hidden sm:inline">{exportando ? 'Exportando…' : 'Excel'}</span>
             </button>
           )}
           <button onClick={() => setModalAbierto(true)} className="btn-primary">
